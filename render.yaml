@@ -1,0 +1,17 @@
+services:
+  - type: worker
+    name: gratitude-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DB_PATH
+        value: /data/gratitude_bot.db
+    disk:
+      name: bot-data
+      mountPath: /data
+      sizeGB: 1
