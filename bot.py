@@ -1,9 +1,8 @@
 import os
 import logging
-import asyncio
 from datetime import datetime, time
 import pytz
-import anthropic
+import google.generativeai as genai
 from telegram import Update
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
@@ -17,24 +16,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TELEGRAM_TOKEN  = os.environ["TELEGRAM_TOKEN"]
-ANTHROPIC_KEY   = os.environ["ANTHROPIC_API_KEY"]
-EGYPT_TZ        = pytz.timezone("Africa/Cairo")
+TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
+GEMINI_KEY     = os.environ["GEMINI_API_KEY"]
+EGYPT_TZ       = pytz.timezone("Africa/Cairo")
 
-db     = Database()
-client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+genai.configure(api_key=GEMINI_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-def ask_claude(prompt: str, system: str = "") -> str:
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1000,
-        system=system or "أنت مساعد روحاني دافئ ومحفز باللغة العربية.",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return msg.content[0].text.strip()
+db = Database()
+
+def ask_gemini(prompt: str, system: str = "") -> str:
+    full_prompt = f"{system}\n\n{prompt}" if system else prompt
+    response = model.generate_content(full_prompt)
+    return response.text.strip()
 
 def generate_morning_message() -> str:
-    return ask_claude(
+    return ask_gemini(
         "اكتب رسالة صباحية لبوت امتنان إسلامي. الرسالة تحتوي على:\n"
         "1. تحية صباحية دافئة\n"
         "2. نعمة واحدة من نعم الله\n"
@@ -46,7 +43,7 @@ def generate_morning_message() -> str:
     )
 
 def generate_evening_message(morning_blessing: str) -> str:
-    return ask_claude(
+    return ask_gemini(
         f"نعمة اليوم كانت: {morning_blessing}\n\n"
         "اكتب رسالة مسائية تحتوي على سؤالين فقط:\n"
         "1. سؤال عن يوم المستخدم بشكل عام\n"
@@ -56,7 +53,7 @@ def generate_evening_message(morning_blessing: str) -> str:
     )
 
 def generate_encouragement(user_reply: str) -> str:
-    return ask_claude(
+    return ask_gemini(
         f"المستخدم رد بهذا على سؤال المساء: '{user_reply}'\n\n"
         "اكتب رداً تشجيعياً قصيراً (3-4 سطور فقط) دافئاً.\n"
         "ثم أضف في نهاية الرد:\n"
@@ -65,7 +62,7 @@ def generate_encouragement(user_reply: str) -> str:
     )
 
 def generate_reminder() -> str:
-    return ask_claude(
+    return ask_gemini(
         "اكتب رسالة تذكير لطيفة لمستخدم لم يرد على سؤال المساء بعد 3 ساعات.\n"
         "الرسالة قصيرة (سطرين أو ثلاثة).",
         system="أنت بوت امتنان إسلامي دافئ."
