@@ -21,8 +21,7 @@ GEMINI_KEY     = os.environ["GEMINI_API_KEY"]
 EGYPT_TZ       = pytz.timezone("Africa/Cairo")
 
 genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
-
+model =model = genai.GenerativeModel("gemini-2.0-flash")
 db = Database()
 
 def ask_gemini(prompt: str, system: str = "") -> str:
